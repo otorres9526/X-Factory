@@ -21,10 +21,25 @@
             background-color: #0f1014;
             color: #e0e0e0;
             font-family: 'JetBrains Mono', monospace;
-            /* Prevent rubber-banding on iOS */
             overscroll-behavior: none;
             touch-action: none;
         }
+
+        #error-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f1014;
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        #error-overlay.visible { display: flex; }
+        .error-msg { color: #ff3333; margin-bottom: 10px; font-size: 1.2rem; }
+        .error-detail { color: #666; font-size: 0.8rem; margin-bottom: 20px; max-width: 80%; }
 
         #canvas-container {
             width: 100vw;
@@ -93,14 +108,11 @@
             cursor: pointer;
             transition: background 0.2s;
             font-family: inherit;
-        }
-        
-        #year-btn {
-            padding: 0 15px;
             font-size: 0.85rem;
             font-weight: bold;
+            padding: 0 15px;
         }
-
+        
         #toggle-btn {
             width: 40px;
             font-size: 1.5rem;
@@ -216,13 +228,10 @@
             padding-top: 0.5rem;
         }
 
-        /* CONFIRMATION MODAL */
-        #confirm-modal {
+        /* MODALS (Common) */
+        .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7);
             z-index: 50;
             display: flex;
@@ -233,7 +242,7 @@
             transition: opacity 0.2s;
         }
         
-        #confirm-modal.visible {
+        .modal-overlay.visible {
             opacity: 1;
             pointer-events: auto;
         }
@@ -243,13 +252,16 @@
             border: 1px solid #444;
             padding: 2rem;
             border-radius: 12px;
-            max-width: 300px;
+            max-width: 320px;
+            width: 90%;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             transform: scale(0.9);
             transition: transform 0.2s;
+            max-height: 80vh;
+            overflow-y: auto;
         }
-        #confirm-modal.visible .modal-card {
+        .modal-overlay.visible .modal-card {
             transform: scale(1);
         }
 
@@ -259,9 +271,9 @@
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
-        /* Title Colors */
         .modal-title.danger { color: #ff3333; }
         .modal-title.restore { color: #4db8ff; }
+        .modal-title.note { color: #ffdd00; }
 
         .modal-text {
             color: #ccc;
@@ -273,44 +285,94 @@
         .modal-actions {
             display: flex;
             gap: 10px;
+            justify-content: flex-end;
         }
 
-        .btn-cancel {
-            background: #333;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            padding: 10px 20px;
+        /* Habit Manager Specifics */
+        .calendar-list {
+            margin-bottom: 1.5rem;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #0f1014;
             border-radius: 6px;
+            border: 1px solid #333;
         }
-        .btn-confirm {
-            background: #444;
-            color: #fff;
-            border: none;
-            font-weight: bold;
+        .cal-item {
+            padding: 12px;
+            border-bottom: 1px solid #222;
             cursor: pointer;
-            padding: 10px 20px;
-            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
         }
-        /* Confirm Button Variants */
+        .cal-item:last-child { border-bottom: none; }
+        .cal-item:hover { background: #1a1b20; }
+        .cal-item.active { background: rgba(77, 184, 255, 0.15); border-left: 3px solid #4db8ff; }
+        .cal-name { font-size: 0.9rem; color: #eee; pointer-events: none; }
+        .cal-delete { 
+            color: #666; 
+            padding: 4px 8px; 
+            font-size: 0.8rem; 
+            border-radius: 4px;
+            background: transparent;
+            border: 1px solid #333;
+            cursor: pointer;
+            pointer-events: auto; /* Re-enable clicks for button */
+        }
+        .cal-delete:hover { color: #ff3333; border-color: #ff3333; background: rgba(255, 51, 51, 0.1); }
+
+        .new-cal-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+        #new-cal-name {
+            flex: 1;
+            background: #0f1014;
+            border: 1px solid #333;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        #btn-add-cal {
+            padding: 0 15px;
+            background: #4db8ff;
+            color: #000;
+            border: none;
+        }
+
+        textarea#note-input {
+            width: 100%;
+            background: #0f1014;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 6px;
+            resize: none;
+            height: 100px;
+            font-family: inherit;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+        textarea#note-input:focus { outline: none; border-color: #ffdd00; }
+
+        .btn-cancel { background: #333; color: #fff; border: none; cursor: pointer; padding: 10px 20px; border-radius: 6px; flex: 1; }
+        .btn-confirm { background: #444; color: #fff; border: none; font-weight: bold; cursor: pointer; padding: 10px 20px; border-radius: 6px; flex: 1; }
         .btn-confirm.danger { background: #ff3333; }
         .btn-confirm.danger:hover { background: #d00000; }
-        
         .btn-confirm.restore { background: #4db8ff; color: #000; }
         .btn-confirm.restore:hover { background: #3da0e0; }
-
+        .btn-confirm.save-note { background: #ffdd00; color: #000; }
+        .btn-confirm.save-note:hover { background: #d4b800; }
 
         /* YEAR VIEW OVERLAY */
         #year-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #0f1014;
             z-index: 20;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             padding: 0 2rem 2rem 2rem;
             box-sizing: border-box;
             overflow-y: auto;
@@ -318,113 +380,42 @@
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             pointer-events: auto;
         }
-
-        #year-overlay.visible {
-            transform: translateY(0);
-        }
+        #year-overlay.visible { transform: translateY(0); }
 
         .year-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            position: sticky;
-            top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem; position: sticky; top: 0;
             background: rgba(15, 16, 20, 0.95);
             backdrop-filter: blur(10px);
             padding: 1.5rem 0;
             border-bottom: 1px solid #333;
             z-index: 2;
         }
-
-        .year-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 2.5rem;
-            cursor: pointer;
-            padding: 0 1rem;
-            line-height: 1;
-        }
+        .year-title { font-size: 2rem; font-weight: bold; color: #fff; }
+        .close-btn { background: none; border: none; color: #fff; font-size: 2.5rem; cursor: pointer; padding: 0 1rem; line-height: 1; }
         .close-btn:hover { color: #4db8ff; }
 
-        .months-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2rem;
-            padding-bottom: 2rem;
-        }
-
-        .month-card {
-            background: #15161a;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            padding: 1.5rem;
-            transition: border-color 0.2s;
-        }
-        .month-card:hover {
-            border-color: #444;
-        }
-
-        .month-name {
-            font-size: 1.1rem;
-            color: #4db8ff;
-            margin-bottom: 1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            text-align: center;
-            font-size: 0.8rem;
-        }
-
-        .cal-day-header {
-            color: #555;
-            margin-bottom: 8px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
-
-        .cal-day {
-            color: #888;
-            padding: 6px 0;
-            border-radius: 4px;
-        }
-        .cal-day:hover {
-            background: #222;
-            color: #fff;
-        }
+        .months-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; padding-bottom: 2rem; }
+        .month-card { background: #15161a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 1.5rem; transition: border-color 0.2s; }
+        .month-card:hover { border-color: #444; }
+        .month-name { font-size: 1.1rem; color: #4db8ff; margin-bottom: 1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.8rem; }
+        .cal-day-header { color: #555; margin-bottom: 8px; font-size: 0.7rem; font-weight: bold; }
+        .cal-day { color: #888; padding: 6px 0; border-radius: 4px; position: relative; }
+        .cal-day.active { background: #ffaa00; color: #000; border: 1px solid #ffaa00; font-weight: bold; box-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
+        .cal-day.completed { background: rgba(77, 184, 255, 0.3); color: #4db8ff; border: 1px solid #4db8ff; }
+        .cal-day.failed { background: rgba(255, 0, 0, 0.3); color: #ff5555; border: 1px solid #ff0000; }
+        .cal-day.has-note::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background-color: #ffdd00; border-radius: 50%; box-shadow: 0 0 4px #ffdd00; }
         .cal-day.empty { pointer-events: none; }
-        .cal-day.active {
-            background: rgba(77, 184, 255, 0.1);
-            color: #4db8ff;
-            font-weight: bold;
-            border: 1px solid #4db8ff;
-        }
 
         @media (max-width: 600px) {
-            .controls {
-                width: 100%;
-                max-width: none;
-            }
+            .controls { width: 100%; max-width: none; }
             #ui-layer { padding: 1rem; }
             .year-title { font-size: 1.5rem; }
             .months-grid { grid-template-columns: 1fr; }
         }
     </style>
     
-    <!-- Import Map to handle module resolution reliably -->
     <script type="importmap">
         {
             "imports": {
@@ -436,16 +427,25 @@
 </head>
 <body>
 
+    <!-- Crash Overlay -->
+    <div id="error-overlay">
+        <h2 class="error-msg">Something went wrong.</h2>
+        <div class="modal-text">The calendar failed to load.</div>
+        <div class="error-detail" id="error-detail"></div>
+        <button class="nav-btn" onclick="localStorage.clear(); location.reload();">Reset Data & Reload</button>
+    </div>
+
     <div id="canvas-container"></div>
 
     <div id="ui-layer">
         <header>
             <div class="header-content">
-                <h1>January 2026</h1>
-                <div class="subtitle">X-FACTOR ISO-VIEW</div>
+                <h1 id="app-title">January 2026</h1>
+                <div class="subtitle" id="habit-subtitle">X-FACTOR ISO-VIEW</div>
             </div>
             <div class="header-controls">
-                <button id="year-btn" class="nav-btn">Year View</button>
+                <button id="cal-manager-btn" class="nav-btn">Habits</button>
+                <button id="year-btn" class="nav-btn">Year</button>
                 <button id="toggle-btn" class="nav-btn" title="Toggle Controls">☰</button>
             </div>
         </header>
@@ -480,16 +480,34 @@
                 <div class="legend-item"><div class="dot" style="background:#ffaa00"></div>Active</div>
                 <div class="legend-item"><div class="dot" style="background:#aaaaaa"></div>Future</div>
                 <div class="legend-item"><div class="dot" style="background:#ff0000"></div>Broken</div>
+                <div class="legend-item"><div class="dot" style="background:#ffdd00"></div>Note</div>
             </div>
 
             <div class="tip-text">
-                Tip: Click any day to toggle Failed status.
+                Click: Toggle Fail | Dbl-Click: Add Note
+            </div>
+        </div>
+    </div>
+
+    <!-- Habit Manager Modal -->
+    <div id="habit-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title">My Habits</div>
+            <div id="calendar-list" class="calendar-list">
+                <!-- Injected via JS -->
+            </div>
+            <div class="new-cal-row">
+                <input type="text" id="new-cal-name" placeholder="New Habit Name">
+                <button id="btn-add-cal" class="nav-btn">Add</button>
+            </div>
+            <div class="modal-actions">
+                <button class="nav-btn btn-cancel" id="cal-close">Close</button>
             </div>
         </div>
     </div>
 
     <!-- Confirmation Modal -->
-    <div id="confirm-modal">
+    <div id="confirm-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-title" id="modal-title">Break Chain?</div>
             <div class="modal-text" id="modal-msg"></div>
@@ -500,10 +518,23 @@
         </div>
     </div>
 
+    <!-- Note Modal -->
+    <div id="note-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title note">Daily Note</div>
+            <div class="modal-text">Add a note for <b id="note-day-text">Day X</b></div>
+            <textarea id="note-input" placeholder="Type your note here..."></textarea>
+            <div class="modal-actions">
+                <button class="nav-btn btn-cancel" id="note-cancel">Cancel</button>
+                <button class="nav-btn btn-confirm save-note" id="note-save">Save Note</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Year View Overlay -->
     <div id="year-overlay">
         <div class="year-header">
-            <div class="year-title">2026 Calendar</div>
+            <div class="year-title" id="year-view-title">2026 Calendar</div>
             <button class="close-btn" id="close-year-btn">×</button>
         </div>
         <div class="months-grid" id="months-container">
@@ -516,61 +547,91 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- Configuration ---
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error(error);
+            document.getElementById('error-overlay').classList.add('visible');
+            if(error) document.getElementById('error-detail').innerText = error.toString();
+        };
+
         const CONFIG = {
             cubeSize: 0.8,
             gap: 0.1, 
             daySpacing: 18, 
             colors: {
-                filled: 0x4db8ff,   
-                active: 0xffaa00,   
-                empty: 0xaaaaaa, 
-                failed: 0xff0000, 
-                bg: 0x0f1014,
-                text: 0xffffff
+                filled: 0x4db8ff, active: 0xffaa00, empty: 0xaaaaaa, failed: 0xff0000, note: 0xffdd00, bg: 0x0f1014, text: 0xffffff
             }
         };
 
-        // --- Data Persistence Logic ---
-        function loadSavedData() {
+        // --- Data Persistence V2 (Multiple Calendars) ---
+        function generateId() { return 'cal_' + Date.now() + Math.random().toString(36).substr(2, 9); }
+
+        function loadData() {
             try {
-                const saved = localStorage.getItem('xfactor_failed_days');
-                if (saved) {
-                    return new Set(JSON.parse(saved));
+                const dataStr = localStorage.getItem('xfactor_data_v2');
+                if (dataStr) {
+                    const data = JSON.parse(dataStr);
+                    Object.values(data.calendars).forEach(cal => {
+                        cal.failedDays = new Set(cal.failedDays || []);
+                    });
+                    return data;
                 }
+                
+                // MIGRATION
+                const oldFailed = localStorage.getItem('xfactor_failed_days');
+                const oldNotes = localStorage.getItem('xfactor_notes');
+                
+                if (oldFailed || oldNotes) {
+                    const defaultId = generateId();
+                    const failedSet = oldFailed ? JSON.parse(oldFailed) : [];
+                    const notesObj = oldNotes ? JSON.parse(oldNotes) : {};
+                    return {
+                        activeId: defaultId,
+                        calendars: { [defaultId]: { id: defaultId, name: "My First Habit", failedDays: new Set(failedSet), notes: notesObj } }
+                    };
+                }
+
+                // FRESH
+                const defId = generateId();
+                return { activeId: defId, calendars: { [defId]: { id: defId, name: "My First Habit", failedDays: new Set(), notes: {} } } };
+
             } catch (e) {
-                console.warn("Storage not available (likely iframe or private mode). Data will not persist.", e);
+                console.warn("Storage Error", e);
+                const defId = generateId();
+                return { activeId: defId, calendars: { [defId]: { id: defId, name: "Error Recovery", failedDays: new Set(), notes: {} } } };
             }
-            return new Set();
         }
 
-        function saveData(failedSet) {
+        function saveData() {
             try {
-                const arr = Array.from(failedSet);
-                localStorage.setItem('xfactor_failed_days', JSON.stringify(arr));
-            } catch (e) {
-                console.warn("Failed to save data.", e);
-            }
+                const cleanData = { activeId: state.data.activeId, calendars: {} };
+                Object.values(state.data.calendars).forEach(cal => {
+                    cleanData.calendars[cal.id] = {
+                        id: cal.id,
+                        name: cal.name,
+                        failedDays: Array.from(cal.failedDays),
+                        notes: cal.notes
+                    };
+                });
+                localStorage.setItem('xfactor_data_v2', JSON.stringify(cleanData));
+            } catch (e) { console.warn("Save Failed"); }
         }
 
         // --- State ---
+        const initialData = loadData();
         let state = {
             mode: 'realtime', 
-            simDay: 9,
+            simDay: 9, 
             simHour: 12,
-            allBlocks: [],
-            failedDays: loadSavedData(), // Initialize from Storage
-            pendingDay: null,
-            pendingAction: null,
-            dayCenters: {}, // Map of dayIndex -> {x, z}
-            failMarkers: {} // Map of dayIndex -> Mesh (The Red X)
+            data: initialData,
+            get activeCal() { return this.data.calendars[this.data.activeId]; },
+            allBlocks: [], dayCenters: {}, failMarkers: {}, noteMarkers: {}, 
+            clickTimer: null, clickCount: 0, pendingDay: null, pendingAction: null
         };
 
         // --- Scene Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(CONFIG.colors.bg);
-        // Removed Fog to prevent "disappearing" issues
         
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -600,8 +661,8 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(50, 100, 50);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
         // --- Assets ---
@@ -609,7 +670,6 @@
         const edgesGeo = new THREE.EdgesGeometry(geometry);
         const lineMat = new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.4 });
 
-        // Geometry for the Fail Marker (The Red X)
         const xGeo = new THREE.Group();
         const barGeo = new THREE.BoxGeometry(6, 0.5, 1);
         const bar1 = new THREE.Mesh(barGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
@@ -619,226 +679,275 @@
         xGeo.add(bar1);
         xGeo.add(bar2);
 
+        const noteGeo = new THREE.SphereGeometry(0.8, 16, 16);
+        const noteMat = new THREE.MeshStandardMaterial({ 
+            color: CONFIG.colors.note, emissive: CONFIG.colors.note, emissiveIntensity: 0.5, roughness: 0.2
+        });
+
         function createBlock(relX, relZ, hourIndex, dayIndex, centerX, centerZ) {
             const material = new THREE.MeshStandardMaterial({ 
-                color: CONFIG.colors.empty,
-                roughness: 0.2,
-                metalness: 0.5,
-                transparent: true,
-                opacity: 0.5 
+                color: CONFIG.colors.empty, roughness: 0.2, metalness: 0.5, transparent: true, opacity: 0.5 
             });
-
             const cube = new THREE.Mesh(geometry, material);
             cube.position.set(centerX + relX, CONFIG.cubeSize/2, centerZ + relZ);
             cube.castShadow = true;
             cube.receiveShadow = true;
-            
-            cube.userData = { 
-                day: dayIndex,
-                hour: hourIndex,
-                baseY: CONFIG.cubeSize/2
-            };
-
+            cube.userData = { day: dayIndex, hour: hourIndex, baseY: CONFIG.cubeSize/2 };
             const line = new THREE.LineSegments(edgesGeo, lineMat);
             cube.add(line);
-
             scene.add(cube);
             state.allBlocks.push(cube);
         }
 
         function buildDayX(dayIndex, centerX, centerZ) {
             const step = CONFIG.cubeSize + CONFIG.gap;
-            
-            // Store center for fail marker placement
             state.dayCenters[dayIndex] = { x: centerX, z: centerZ };
-            
-            // Generate 4 arms
-            for(let i=0; i<6; i++) {
-                const pos = i + 1; 
-                createBlock(-pos * step, -pos * step, i, dayIndex, centerX, centerZ); 
-            }
-            for(let i=0; i<6; i++) {
-                const pos = i + 1;
-                createBlock(pos * step, -pos * step, i + 6, dayIndex, centerX, centerZ);
-            }
-            for(let i=0; i<6; i++) {
-                const pos = i + 1;
-                createBlock(pos * step, pos * step, i + 12, dayIndex, centerX, centerZ);
-            }
-            for(let i=0; i<6; i++) {
-                const pos = i + 1;
-                createBlock(-pos * step, pos * step, i + 18, dayIndex, centerX, centerZ);
-            }
+            for(let i=0; i<6; i++) { const pos = i+1; createBlock(-pos*step, -pos*step, i, dayIndex, centerX, centerZ); }
+            for(let i=0; i<6; i++) { const pos = i+1; createBlock(pos*step, -pos*step, i+6, dayIndex, centerX, centerZ); }
+            for(let i=0; i<6; i++) { const pos = i+1; createBlock(pos*step, pos*step, i+12, dayIndex, centerX, centerZ); }
+            for(let i=0; i<6; i++) { const pos = i+1; createBlock(-pos*step, pos*step, i+18, dayIndex, centerX, centerZ); }
         }
 
         function buildMonthGrid() {
-            const startOffset = 4; // Jan 1 2026 = Thursday
-            const totalDays = 31;
-            
-            const gridWidth = 7 * CONFIG.daySpacing;
-            const startX = -gridWidth / 2 + (CONFIG.daySpacing / 2);
-            const startZ = -40;
+            try {
+                const startOffset = 4; 
+                const totalDays = 31;
+                const startX = -((7 * CONFIG.daySpacing)/2) + (CONFIG.daySpacing / 2);
+                const startZ = -40;
 
-            for (let day = 1; day <= totalDays; day++) {
-                const gridIndex = (day - 1) + startOffset;
-                const col = gridIndex % 7;
-                const row = Math.floor(gridIndex / 7);
-
-                const x = startX + (col * CONFIG.daySpacing);
-                const z = startZ + (row * CONFIG.daySpacing);
-
-                buildDayX(day, x, z);
+                for (let day = 1; day <= totalDays; day++) {
+                    const gridIndex = (day - 1) + startOffset;
+                    const col = gridIndex % 7;
+                    const row = Math.floor(gridIndex / 7);
+                    const x = startX + (col * CONFIG.daySpacing);
+                    const z = startZ + (row * CONFIG.daySpacing);
+                    buildDayX(day, x, z);
+                    
+                    const markerGeo = new THREE.PlaneGeometry(2, 2);
+                    const markerMat = new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide });
+                    const marker = new THREE.Mesh(markerGeo, markerMat);
+                    marker.rotation.x = -Math.PI/2;
+                    marker.position.set(x, 0.05, z);
+                    scene.add(marker);
+                }
                 
-                // Day Marker
-                const markerGeo = new THREE.PlaneGeometry(2, 2);
-                const markerMat = new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide });
-                const marker = new THREE.Mesh(markerGeo, markerMat);
-                marker.rotation.x = -Math.PI/2;
-                marker.position.set(x, 0.05, z);
-                scene.add(marker);
-            }
-            
-            // Floor
-            const planeGeo = new THREE.PlaneGeometry(300, 300);
-            const planeMat = new THREE.MeshStandardMaterial({ 
-                color: 0x080808, 
-                roughness: 0.8, 
-                metalness: 0.2 
-            });
-            const plane = new THREE.Mesh(planeGeo, planeMat);
-            plane.rotation.x = -Math.PI / 2;
-            plane.receiveShadow = true;
-            plane.position.y = -0.1;
-            scene.add(plane);
-            
-            const gridHelper = new THREE.GridHelper(300, 20, 0x222222, 0x111111);
-            scene.add(gridHelper);
+                const planeGeo = new THREE.PlaneGeometry(300, 300);
+                const planeMat = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.8, metalness: 0.2 });
+                const plane = new THREE.Mesh(planeGeo, planeMat);
+                plane.rotation.x = -Math.PI / 2;
+                plane.receiveShadow = true;
+                plane.position.y = -0.1;
+                scene.add(plane);
+            } catch(e) { console.error(e); }
         }
 
         buildMonthGrid();
 
-        // --- Fail Marker Logic ---
-        function updateFailMarkers() {
-            // Check all days in fail set
-            state.failedDays.forEach(dayIndex => {
+        // --- Marker Logic ---
+        function updateMarkers() {
+            if(!state.failMarkers) state.failMarkers = {};
+            if(!state.noteMarkers) state.noteMarkers = {};
+            
+            const activeFailed = state.activeCal.failedDays;
+            const activeNotes = state.activeCal.notes;
+
+            activeFailed.forEach(dayIndex => {
                 if (!state.failMarkers[dayIndex]) {
-                    // Create marker
                     const center = state.dayCenters[dayIndex];
                     if (center) {
                         const marker = xGeo.clone();
                         marker.position.set(center.x, 2, center.z);
-                        
-                        // Pulse Animation Hook
                         marker.userData = { isMarker: true, offset: Math.random() * 10, dayIndex: dayIndex };
-                        
                         scene.add(marker);
                         state.failMarkers[dayIndex] = marker;
                     }
                 }
             });
-
-            // Check if any need removal
             for (const [dayIndex, marker] of Object.entries(state.failMarkers)) {
-                if (!state.failedDays.has(parseInt(dayIndex))) {
+                if (!activeFailed.has(parseInt(dayIndex))) {
                     scene.remove(marker);
                     delete state.failMarkers[dayIndex];
                 }
             }
+
+            if (activeNotes) {
+                Object.keys(activeNotes).forEach(dayIndex => {
+                    dayIndex = parseInt(dayIndex);
+                    if (!state.noteMarkers[dayIndex] && activeNotes[dayIndex]) {
+                        const center = state.dayCenters[dayIndex];
+                        if (center) {
+                            const marker = new THREE.Mesh(noteGeo, noteMat);
+                            marker.position.set(center.x + 3, 3, center.z - 3);
+                            marker.userData = { isMarker: true, isNote: true, offset: Math.random() * 10, dayIndex: dayIndex };
+                            scene.add(marker);
+                            state.noteMarkers[dayIndex] = marker;
+                        }
+                    }
+                });
+                for (const [dayIndex, marker] of Object.entries(state.noteMarkers)) {
+                    if (!activeNotes[dayIndex]) {
+                        scene.remove(marker);
+                        delete state.noteMarkers[dayIndex];
+                    }
+                }
+            }
         }
+
+        // --- Habit Manager Logic ---
+        const habitModal = document.getElementById('habit-modal');
+        const btnCalManager = document.getElementById('cal-manager-btn');
+        const btnCalClose = document.getElementById('cal-close');
+        const calendarList = document.getElementById('calendar-list');
+        const newCalName = document.getElementById('new-cal-name');
+        const btnAddCal = document.getElementById('btn-add-cal');
+        const subtitle = document.getElementById('habit-subtitle');
+
+        function updateUIHeader() {
+            subtitle.innerText = state.activeCal.name.toUpperCase();
+        }
+
+        function renderCalendarList() {
+            calendarList.innerHTML = '';
+            Object.values(state.data.calendars).forEach(cal => {
+                // CHANGED: Click handler moved to parent div
+                const div = document.createElement('div');
+                div.className = `cal-item ${cal.id === state.data.activeId ? 'active' : ''}`;
+                div.onclick = () => switchCalendar(cal.id);
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'cal-name';
+                nameSpan.innerText = cal.name;
+                
+                div.appendChild(nameSpan);
+
+                if (Object.keys(state.data.calendars).length > 1) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'cal-delete';
+                    delBtn.innerText = 'Del';
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteCalendar(cal.id); };
+                    div.appendChild(delBtn);
+                }
+
+                calendarList.appendChild(div);
+            });
+        }
+
+        function switchCalendar(id) {
+            state.data.activeId = id;
+            updateUIHeader();
+            updateMarkers();
+            updateScene();
+            saveData();
+            renderCalendarList();
+        }
+
+        function deleteCalendar(id) {
+            if (confirm("Delete this habit?")) {
+                delete state.data.calendars[id];
+                if (state.data.activeId === id) {
+                    state.data.activeId = Object.keys(state.data.calendars)[0];
+                }
+                switchCalendar(state.data.activeId);
+            }
+        }
+
+        btnAddCal.addEventListener('click', () => {
+            const name = newCalName.value.trim();
+            if (name) {
+                const id = generateId();
+                state.data.calendars[id] = { id: id, name: name, failedDays: new Set(), notes: {} };
+                newCalName.value = '';
+                switchCalendar(id);
+            }
+        });
+
+        btnCalManager.addEventListener('click', () => {
+            renderCalendarList();
+            habitModal.classList.add('visible');
+        });
+        
+        btnCalClose.addEventListener('click', () => habitModal.classList.remove('visible'));
 
 
         // --- Interaction Logic ---
-        
         let isDragging = false;
         let mouseDownPos = { x: 0, y: 0 };
         
-        // Modal Elements
         const modal = document.getElementById('confirm-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMsg = document.getElementById('modal-msg');
         const btnConfirm = document.getElementById('confirm-ok');
         const btnCancel = document.getElementById('confirm-cancel');
 
-        renderer.domElement.addEventListener('pointerdown', (e) => {
-            isDragging = false;
-            mouseDownPos = { x: e.clientX, y: e.clientY };
-        });
+        const noteModal = document.getElementById('note-modal');
+        const noteDayText = document.getElementById('note-day-text');
+        const noteInput = document.getElementById('note-input');
+        const btnNoteSave = document.getElementById('note-save');
+        const btnNoteCancel = document.getElementById('note-cancel');
 
-        renderer.domElement.addEventListener('pointermove', (e) => {
-            if (Math.abs(e.clientX - mouseDownPos.x) > 10 || Math.abs(e.clientY - mouseDownPos.y) > 10) {
-                isDragging = true;
-            }
-            updateCursor(e);
-        });
-
+        renderer.domElement.addEventListener('pointerdown', (e) => { isDragging = false; mouseDownPos = { x: e.clientX, y: e.clientY }; });
+        renderer.domElement.addEventListener('pointermove', (e) => { if (Math.abs(e.clientX - mouseDownPos.x) > 10) isDragging = true; updateCursor(e); });
         renderer.domElement.addEventListener('pointerup', onPointerUp);
+        renderer.domElement.addEventListener('dblclick', onDoubleClick);
 
         function updateCursor(event) {
-            // Check if hovering over a block or marker
             const rect = renderer.domElement.getBoundingClientRect();
             mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
-            
-            const interactables = [...state.allBlocks, ...Object.values(state.failMarkers)];
+            const interactables = [...state.allBlocks, ...Object.values(state.failMarkers), ...Object.values(state.noteMarkers)];
             const intersects = raycaster.intersectObjects(interactables, true);
-            
+            renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+        }
+
+        function getIntersectedDay(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const interactables = [...state.allBlocks, ...Object.values(state.failMarkers), ...Object.values(state.noteMarkers)];
+            const intersects = raycaster.intersectObjects(interactables, true);
             if (intersects.length > 0) {
-                renderer.domElement.style.cursor = 'pointer';
-            } else {
-                renderer.domElement.style.cursor = 'default';
+                let target = intersects[0].object;
+                while (target && target !== scene) {
+                    if (target.userData && typeof target.userData.day !== 'undefined') return target.userData.day;
+                    if (target.userData && target.userData.isMarker) return target.userData.dayIndex;
+                    target = target.parent;
+                }
             }
+            return null;
         }
 
         function onPointerUp(event) {
             if (isDragging) return;
-            if (event.target.closest('.controls') || event.target.closest('header') || event.target.closest('#year-overlay')) {
-                return;
-            }
-
-            const rect = renderer.domElement.getBoundingClientRect();
-            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            
-            // RAYCAST AGAINST EVERYTHING
-            const interactables = [...state.allBlocks, ...Object.values(state.failMarkers)];
-            // recursive = true to hit children (wires, x-bars)
-            const intersects = raycaster.intersectObjects(interactables, true);
-
-            if (intersects.length > 0) {
-                // Find logical parent
-                let target = intersects[0].object;
-                let dayIndex = null;
-
-                // Traverse up to find userData
-                while (target && target !== scene) {
-                    if (target.userData && typeof target.userData.day !== 'undefined') {
-                        dayIndex = target.userData.day;
-                        break;
-                    }
-                    if (target.userData && target.userData.isMarker) {
-                        dayIndex = target.userData.dayIndex;
-                        break;
-                    }
-                    target = target.parent;
-                }
-
-                if (dayIndex !== null) {
-                    handleDayClick(dayIndex);
-                }
+            if (event.target.closest('.controls') || event.target.closest('header') || event.target.closest('.modal-overlay')) return;
+            const dayIndex = getIntersectedDay(event);
+            if (dayIndex !== null) {
+                if (state.clickTimer) clearTimeout(state.clickTimer);
+                state.clickCount++;
+                state.clickTimer = setTimeout(() => {
+                    if (state.clickCount === 1) handleSingleClick(dayIndex);
+                    state.clickCount = 0;
+                }, 250);
             }
         }
 
-        function handleDayClick(dayIndex) {
+        function onDoubleClick(event) {
+            if (state.clickTimer) clearTimeout(state.clickTimer);
+            state.clickCount = 0;
+            const dayIndex = getIntersectedDay(event);
+            if (dayIndex !== null) handleNoteClick(dayIndex);
+        }
+
+        function handleSingleClick(dayIndex) {
             state.pendingDay = dayIndex;
+            const failedSet = state.activeCal.failedDays;
             
-            if (state.failedDays.has(dayIndex)) {
+            if (failedSet.has(dayIndex)) {
                 state.pendingAction = 'restore';
                 modalTitle.innerText = "Restore Day?";
                 modalTitle.className = "modal-title restore";
-                modalMsg.innerHTML = `Restore <b>Day ${dayIndex}</b> to normal status?`;
+                modalMsg.innerHTML = `Restore <b>Day ${dayIndex}</b> for "${state.activeCal.name}"?`;
                 btnConfirm.innerText = "Yes, Restore";
                 btnConfirm.className = "nav-btn btn-confirm restore";
                 modal.classList.add('visible');
@@ -846,40 +955,48 @@
                 state.pendingAction = 'break';
                 modalTitle.innerText = "Fail Day?";
                 modalTitle.className = "modal-title danger";
-                modalMsg.innerHTML = `Mark <b>Day ${dayIndex}</b> as Failed? This indicates a broken habit chain.`;
+                modalMsg.innerHTML = `Mark <b>Day ${dayIndex}</b> as Failed for "${state.activeCal.name}"?`;
                 btnConfirm.innerText = "Yes, Mark Failed";
                 btnConfirm.className = "nav-btn btn-confirm danger";
                 modal.classList.add('visible');
             }
         }
 
-        btnCancel.addEventListener('click', () => {
-            modal.classList.remove('visible');
-            state.pendingDay = null;
-            state.pendingAction = null;
-        });
+        function handleNoteClick(dayIndex) {
+            state.pendingDay = dayIndex;
+            noteDayText.innerText = `Day ${dayIndex} (${state.activeCal.name})`;
+            noteInput.value = (state.activeCal.notes && state.activeCal.notes[dayIndex]) || "";
+            noteModal.classList.add('visible');
+        }
 
+        btnCancel.addEventListener('click', () => { modal.classList.remove('visible'); state.pendingDay = null; });
         btnConfirm.addEventListener('click', () => {
             if (state.pendingDay !== null) {
-                if (state.pendingAction === 'break') {
-                    state.failedDays.add(state.pendingDay);
-                } else if (state.pendingAction === 'restore') {
-                    state.failedDays.delete(state.pendingDay);
-                }
-                
-                // Save to Storage
-                saveData(state.failedDays);
-                
-                updateFailMarkers();
+                const failedSet = state.activeCal.failedDays;
+                if (state.pendingAction === 'break') failedSet.add(state.pendingDay);
+                else if (state.pendingAction === 'restore') failedSet.delete(state.pendingDay);
+                saveData();
+                updateMarkers();
                 updateScene();
             }
             modal.classList.remove('visible');
             state.pendingDay = null;
-            state.pendingAction = null;
         });
 
+        btnNoteCancel.addEventListener('click', () => { noteModal.classList.remove('visible'); state.pendingDay = null; });
+        btnNoteSave.addEventListener('click', () => {
+            if (state.pendingDay !== null) {
+                const text = noteInput.value.trim();
+                if (text) state.activeCal.notes[state.pendingDay] = text;
+                else delete state.activeCal.notes[state.pendingDay];
+                saveData();
+                updateMarkers();
+                updateScene();
+            }
+            noteModal.classList.remove('visible');
+            state.pendingDay = null;
+        });
 
-        // --- UI Logic ---
         const sliderDay = document.getElementById('daySlider');
         const sliderHour = document.getElementById('hourSlider');
         const btnReal = document.getElementById('btn-realtime');
@@ -891,93 +1008,65 @@
         const closeYearBtn = document.getElementById('close-year-btn');
         const monthsContainer = document.getElementById('months-container');
 
-        toggleBtn.addEventListener('click', () => {
-            controlsPanel.classList.toggle('collapsed');
-        });
-        
+        toggleBtn.addEventListener('click', () => controlsPanel.classList.toggle('collapsed'));
         yearBtn.addEventListener('click', () => {
             yearOverlay.classList.add('visible');
-            if (monthsContainer.children.length === 0) {
-                generateYearCalendar(2026);
-            }
+            monthsContainer.innerHTML = '';
+            generateYearCalendar(2026);
         });
-
-        closeYearBtn.addEventListener('click', () => {
-            yearOverlay.classList.remove('visible');
-        });
+        closeYearBtn.addEventListener('click', () => yearOverlay.classList.remove('visible'));
 
         function generateYearCalendar(year) {
-            const months = [
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-            ];
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             const daysShort = ["S", "M", "T", "W", "T", "F", "S"];
+            let currentDay = state.mode === 'realtime' ? new Date().getDate() : state.simDay;
 
             months.forEach((monthName, index) => {
                 const monthCard = document.createElement('div');
                 monthCard.className = 'month-card';
-
                 const title = document.createElement('div');
                 title.className = 'month-name';
                 title.innerText = monthName;
                 monthCard.appendChild(title);
-
                 const grid = document.createElement('div');
                 grid.className = 'calendar-grid';
-
                 daysShort.forEach(d => {
                     const el = document.createElement('div');
                     el.className = 'cal-day-header';
                     el.innerText = d;
                     grid.appendChild(el);
                 });
-
                 const firstDay = new Date(year, index, 1).getDay();
                 const daysInMonth = new Date(year, index + 1, 0).getDate();
-
                 for(let i=0; i<firstDay; i++) {
                     const el = document.createElement('div');
                     el.className = 'cal-day empty';
                     grid.appendChild(el);
                 }
-
                 for(let d=1; d<=daysInMonth; d++) {
                     const el = document.createElement('div');
                     el.className = 'cal-day';
                     el.innerText = d;
-                    if (index === 0 && d === 9) el.classList.add('active');
+                    if (index === 0) { 
+                        if (state.activeCal.failedDays.has(d)) el.classList.add('failed');
+                        else if (d < currentDay) el.classList.add('completed');
+                        else if (d === currentDay) el.classList.add('active');
+                        if (state.activeCal.notes && state.activeCal.notes[d]) el.classList.add('has-note');
+                    }
                     grid.appendChild(el);
                 }
-
                 monthCard.appendChild(grid);
                 monthsContainer.appendChild(monthCard);
             });
         }
 
-        btnReal.addEventListener('click', () => {
-            state.mode = 'realtime';
-            btnReal.classList.add('active');
-            btnDemo.classList.remove('active');
-            sliderDay.disabled = true;
-            sliderHour.disabled = true;
-            controls.autoRotate = false;
-        });
-
-        btnDemo.addEventListener('click', () => {
-            state.mode = 'demo';
-            btnDemo.classList.add('active');
-            btnReal.classList.remove('active');
-            sliderDay.disabled = false;
-            sliderHour.disabled = false;
-            controls.autoRotate = true;
-        });
-
+        btnReal.addEventListener('click', () => { state.mode = 'realtime'; btnReal.classList.add('active'); btnDemo.classList.remove('active'); sliderDay.disabled = true; sliderHour.disabled = true; controls.autoRotate = false; });
+        btnDemo.addEventListener('click', () => { state.mode = 'demo'; btnDemo.classList.add('active'); btnReal.classList.remove('active'); sliderDay.disabled = false; sliderHour.disabled = false; controls.autoRotate = true; });
         sliderDay.addEventListener('input', (e) => state.simDay = parseInt(e.target.value));
         sliderHour.addEventListener('input', (e) => state.simHour = parseInt(e.target.value));
 
         function updateScene() {
             let activeDay, activeHour;
-
             if (state.mode === 'realtime') {
                 const now = new Date();
                 activeDay = now.getDate(); 
@@ -994,11 +1083,10 @@
             }
 
             const nowTime = Date.now();
+            const failedSet = state.activeCal.failedDays;
 
-            // Animate Markers
-            for (const marker of Object.values(state.failMarkers)) {
-                marker.position.y = 2 + Math.sin(nowTime * 0.003 + marker.userData.offset) * 0.5;
-            }
+            for (const marker of Object.values(state.failMarkers)) marker.position.y = 2 + Math.sin(nowTime * 0.003 + marker.userData.offset) * 0.5;
+            for (const marker of Object.values(state.noteMarkers)) marker.position.y = 3 + Math.sin(nowTime * 0.002 + marker.userData.offset) * 0.3;
 
             for (let i = 0; i < state.allBlocks.length; i++) {
                 const block = state.allBlocks[i];
@@ -1006,9 +1094,7 @@
                 const mat = block.material;
                 const wire = block.children[0].material;
 
-                // Priority Check: Is this day failed?
-                if (state.failedDays.has(data.day)) {
-                    // Turn blocks very dark red to contrast with the big Red X
+                if (failedSet.has(data.day)) {
                     mat.color.setHex(0x330000); 
                     mat.opacity = 0.3; 
                     mat.emissive.setHex(0x000000);
@@ -1019,9 +1105,7 @@
                     continue; 
                 }
 
-                // Standard Status Logic
                 if (data.day < activeDay) {
-                    // Past Day: Fully Complete
                     mat.color.setHex(CONFIG.colors.filled);
                     mat.opacity = 0.8;
                     mat.emissive.setHex(0x001133);
@@ -1030,9 +1114,7 @@
                     block.scale.setScalar(1);
                     wire.opacity = 0.2;
                     wire.color.setHex(0xffffff);
-                }
-                else if (data.day > activeDay) {
-                    // Future Day: Light Gray Blocks
+                } else if (data.day > activeDay) {
                     mat.color.setHex(CONFIG.colors.empty);
                     mat.opacity = 0.5; 
                     mat.emissive.setHex(0x000000);
@@ -1040,9 +1122,7 @@
                     block.scale.setScalar(0.9);
                     wire.opacity = 0.3;
                     wire.color.setHex(0xffffff);
-                }
-                else {
-                    // Current Day: Check Hours
+                } else {
                     if (data.hour < activeHour) {
                         mat.color.setHex(CONFIG.colors.filled);
                         mat.opacity = 0.9;
@@ -1052,8 +1132,7 @@
                         block.scale.setScalar(1);
                         wire.opacity = 0.4;
                         wire.color.setHex(0xffffff);
-                    }
-                    else if (data.hour === activeHour) {
+                    } else if (data.hour === activeHour) {
                         mat.color.setHex(CONFIG.colors.active);
                         mat.opacity = 1;
                         mat.emissive.setHex(CONFIG.colors.active);
@@ -1062,8 +1141,7 @@
                         block.scale.setScalar(1.1);
                         wire.opacity = 0.8;
                         wire.color.setHex(0xffffff);
-                    }
-                    else {
+                    } else {
                         mat.color.setHex(CONFIG.colors.empty);
                         mat.opacity = 0.5;
                         mat.emissive.setHex(0x000000);
@@ -1076,7 +1154,6 @@
             }
         }
 
-        // --- RENDER LOOP AND INIT ---
         function renderLoop() {
             requestAnimationFrame(renderLoop);
             controls.update();
@@ -1085,19 +1162,13 @@
         }
 
         function init() {
-            // Initial checks
-            updateFailMarkers();
-            
-            // Start Loop
+            updateUIHeader();
+            updateMarkers();
             renderLoop();
         }
 
-        // Start application
         init();
 
     </script>
 </body>
 </html>
-
-
-
